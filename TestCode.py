@@ -65,7 +65,7 @@ learning_rate = 0.001
 
 # Training Dataset
 dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
-#dataframe = dataframe.head(5)
+#dataframe = dataframe.head(100)
 dataset = QAOptionsDataset(dataframe)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -108,7 +108,7 @@ def evaluate_model(model, dataloader):
 
 def Validation_and_Accuracy():
     dataframe_test = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
-    #dataframe_test = dataframe.head(5)
+    #dataframe_test = dataframe_test.head(100)
     dataset_test = QAOptionsDataset(dataframe_test)
     test_dataloader = DataLoader(dataset_test, batch_size=16, shuffle=True)
     evaluate_model(model, test_dataloader)
