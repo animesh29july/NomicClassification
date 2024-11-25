@@ -43,12 +43,12 @@ import torch.nn.functional as F
 class QAModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_options):
         super(QAModel, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)  # Input layer
-        self.fc2 = nn.Linear(hidden_dim, num_options)  # Output layer
+        self.fc1 = nn.Linear(input_dim, hidden_dim)  
+        self.fc2 = nn.Linear(hidden_dim, num_options)
 
     def forward(self, article_emb, question_emb, options_emb):
         # Concatenate article and question embeddings
-        combined_emb = torch.cat((article_emb, question_emb), dim=-1)  # Shape: [batch_size, input_dim]
+        combined_emb = torch.cat((article_emb, question_emb), dim=-1)
         x = F.relu(self.fc1(combined_emb))
         logits = self.fc2(x)  # Output logits for each option
         return logits
@@ -57,14 +57,14 @@ class QAModel(nn.Module):
 # Training Loop
 
 # Hyperparameters
-input_dim = 768 * 2  # Assuming Nomic embeddings are 768-dimensional
+input_dim = 768 * 2  # Combined Dimensions of Options and Source
 hidden_dim = 256
 num_epochs = 10
 batch_size = 16
 learning_rate = 0.001
 
 # Training Dataset
-dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')  # Load dataset
+dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
 #dataframe = dataframe.head(5)
 dataset = QAOptionsDataset(dataframe)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -98,7 +98,7 @@ def evaluate_model(model, dataloader):
     with torch.no_grad():
         for article_emb, question_emb, options_emb, correct_answer in dataloader:
             outputs = model(article_emb, question_emb, options_emb)
-            predictions = torch.argmax(outputs, dim=-1)  # Predicted option indices
+            predictions = torch.argmax(outputs, dim=-1)  # Predicted option index 
             print(str(predictions) + ": "+str(correct_answer))
             correct += (predictions == correct_answer).sum().item()
             total += len(correct_answer)
