@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sentence_transformers import SentenceTransformer
-
+import datasets
 from transformers import AutoTokenizer
 
 
@@ -11,7 +11,12 @@ model_embed = SentenceTransformer("nomic-ai/nomic-embed-text-v1", trust_remote_c
 
 tokenizer = AutoTokenizer.from_pretrained("nomic-ai/nomic-embed-text-v1")
 
-
+def load_data(dataset_name):
+    # trust_remote_code: target dataset may or may not include remote code to preprocess the dataset, not needed 
+    # if your target dataset doesn't have it, but causes if no issues if left True. Only concern would be security when loading
+    # datasets from untrusted sources (is my opinion)
+    data = datasets.load_dataset(dataset_name, trust_remote_code = True)
+    return data
 
 
 # Define function to embed text using Nomic
@@ -73,8 +78,12 @@ batch_size = 16
 learning_rate = 0.1
 
 # Training Dataset
-dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
-#dataframe = dataframe.head(100)
+# dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
+# dataframe = dataframe.head(5)
+
+data = load_data("emozilla/quality")
+dataframe = data['train']
+
 dataset = QAOptionsDataset(dataframe)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -167,9 +176,10 @@ def balance_dataset(data):
 
 
 def main():
-    dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
-    #dataframe_validation = dataframe_validation.head(100)
-
+    # dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
+    data = load_data("emozilla/quality")
+    # dataframe_validation = dataframe_validation.head(5)
+    dataframe_validation = data['validation']
     val1, val2 = balance_dataset(dataframe_validation)
 
 
