@@ -27,6 +27,8 @@ def create_embedding(text):
 def main():
     
 # Training Dataset
+
+
     dataframe_train = pd.read_json('character_dataset/character_id_train.json', lines=True)
     #dataframe_train = dataframe_train.head(2)
 
@@ -44,13 +46,13 @@ def main():
 
     # Embed Source
     embeddings_train = [create_embedding(source) for source in dataframe_train['input']]
-    print(f"Generated Embeddings Train Shape: {embeddings_train.shape}")
+    #print(f"Generated Embeddings Train Shape: {embeddings_train.shape}")
 
     embeddings_val = [create_embedding(source) for source in dataframe_val['input']]
-    print(f"Generated Embeddings Train Shape: {embeddings_val.shape}")
+    #print(f"Generated Embeddings Train Shape: {embeddings_val.shape}")
 
     embeddings_test = [create_embedding(source) for source in dataframe_test['input']]
-    print(f"Generated Embeddings Test Shape: {embeddings_test.shape}")
+    #print(f"Generated Embeddings Test Shape: {embeddings_test.shape}")
 
     # Combine embeddings with labels
     X_train = np.array(embeddings_train)
