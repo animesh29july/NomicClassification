@@ -123,73 +123,37 @@ def evaluate_model(model, dataloader):
     accuracy = correct / total
     print(f"Accuracy: {accuracy * 100:.2f}%")
 
-def balance_dataset(data):
-    #Function to split validation in half and have equal num of hard in both
-    
-    s1_art, s1_q, s1_opt, s1_ans, s2_art, s2_q, s2_opt, s2_ans = [],[],[],[],[],[],[],[]
-    balance_hard = 0
-    balance_easy = 0
-    num_hard = 0
 
+def balance_hard(data):
+    # Separate rows by the boolean hard
+    hard = data[data['hard'] == True]  # Rows where hard is True
+    not_hard = data[data['hard'] == False]  # Rows where hard is False
 
-    for i in range(len(data)):
-        d = data['hard'][i]
-        if d:
-            num_hard += 1
-            if balance_hard > 0:
-                # go left
-                s1_art.append(data['article'][i])
-                s1_q.append(data['question'][i])
-                s1_opt.append(data['options'][i])
-                s1_ans.append(data['answer'][i])
-                balance_hard -= 1
-            else:
-                #go right
-                s2_art.append(data['article'][i])
-                s2_q.append(data['question'][i])
-                s2_opt.append(data['options'][i])
-                s2_ans.append(data['answer'][i])
-                balance_hard += 1
-        else:
-            if balance_easy > 0:
-                # go left
-                s1_art.append(data['article'][i])
-                s1_q.append(data['question'][i])
-                s1_opt.append(data['options'][i])
-                s1_ans.append(data['answer'][i])
-                balance_easy -= 1
-            else:
-                #go right
-                s2_art.append(data['article'][i])
-                s2_q.append(data['question'][i])
-                s2_opt.append(data['options'][i])
-                s2_ans.append(data['answer'][i])
-                balance_easy += 1
-    print(num_hard)
-    print(f"this is length of s1: {len(s1_art)}")
-    print(f"this is length of s2: {len(s2_art)}")
-    print(f"this is balance hard: {balance_hard}")
-    print(f"this is balance easy: {balance_easy}")
-    split1 = [s1_art, s1_q, s1_opt, s1_ans]
-    split2 = [s2_art, s2_q, s2_opt, s2_ans]
-    split1.insert(0,['article', 'question', 'options', 'answer'])
-    split2.insert(0,['article', 'question', 'options', 'answer'])
+    # Split `hard` into two halves
+    hard_split = [hard.iloc[:len(hard)//2], hard.iloc[len(hard)//2:]]
+
+    # Split `not_hard` into two halves
+    not_hard_split = [not_hard.iloc[:len(not_hard)//2], not_hard.iloc[len(not_hard)//2:]]
+
+    # Combine the splits to create two DataFrames
+    split1 = pd.concat([hard_split[0], not_hard_split[0]]).reset_index(drop=True)
+    split2 = pd.concat([hard_split[1], not_hard_split[1]]).reset_index(drop=True)
+
     return split1, split2
-
 
 def main():
     dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
-    # data = load_data("emozilla/quality")
+    #data = load_data("emozilla/quality")
     #dataframe_validation = dataframe_validation.head(5)
     #dataframe_validation = data['validation']
-    # val1, val2 = balance_dataset(dataframe_validation)
+    val1, val2 = balance_hard(dataframe_validation)
 
     # val2 = [row + [None] * (len(val2[0]) - len(row)) for row in val2[1:]]
     # val2.insert(0,['article', 'question', 'options', 'answer'])
 
 
 
-    dataset_validation = QAOptionsDataset(dataframe_validation)
+    dataset_validation = QAOptionsDataset(val2)
     test_dataloader = DataLoader(dataset_validation, batch_size=16, shuffle=True)
     evaluate_model(model, test_dataloader)
 
