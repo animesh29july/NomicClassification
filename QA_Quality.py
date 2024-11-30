@@ -78,11 +78,11 @@ batch_size = 16
 learning_rate = 0.1
 
 # Training Dataset
-# dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
-# dataframe = dataframe.head(5)
+dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
+#dataframe = dataframe.head(5)
 
-data = load_data("emozilla/quality")
-dataframe = data['train']
+# data = load_data("emozilla/quality")
+# dataframe = data['train']
 
 dataset = QAOptionsDataset(dataframe)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -133,37 +133,37 @@ def balance_dataset(data):
 
 
     for i in range(len(data)):
-        d = data[i]['hard']
+        d = data['hard'][i]
         if d:
             num_hard += 1
             if balance_hard > 0:
                 # go left
-                s1_art.append(data[i]['article'])
-                s1_q.append(data[i]['question'])
-                s1_opt.append(data[i]['options'])
-                s1_ans.append(data[i]['answer'])
+                s1_art.append(data['article'][i])
+                s1_q.append(data['question'][i])
+                s1_opt.append(data['options'][i])
+                s1_ans.append(data['answer'][i])
                 balance_hard -= 1
             else:
                 #go right
-                s2_art.append(data[i]['article'])
-                s2_q.append(data[i]['question'])
-                s2_opt.append(data[i]['options'])
-                s2_ans.append(data[i]['answer'])
+                s2_art.append(data['article'][i])
+                s2_q.append(data['question'][i])
+                s2_opt.append(data['options'][i])
+                s2_ans.append(data['answer'][i])
                 balance_hard += 1
         else:
             if balance_easy > 0:
                 # go left
-                s1_art.append(data[i]['article'])
-                s1_q.append(data[i]['question'])
-                s1_opt.append(data[i]['options'])
-                s1_ans.append(data[i]['answer'])
+                s1_art.append(data['article'][i])
+                s1_q.append(data['question'][i])
+                s1_opt.append(data['options'][i])
+                s1_ans.append(data['answer'][i])
                 balance_easy -= 1
             else:
                 #go right
-                s2_art.append(data[i]['article'])
-                s2_q.append(data[i]['question'])
-                s2_opt.append(data[i]['options'])
-                s2_ans.append(data[i]['answer'])
+                s2_art.append(data['article'][i])
+                s2_q.append(data['question'][i])
+                s2_opt.append(data['options'][i])
+                s2_ans.append(data['answer'][i])
                 balance_easy += 1
     print(num_hard)
     print(f"this is length of s1: {len(s1_art)}")
@@ -172,18 +172,24 @@ def balance_dataset(data):
     print(f"this is balance easy: {balance_easy}")
     split1 = [s1_art, s1_q, s1_opt, s1_ans]
     split2 = [s2_art, s2_q, s2_opt, s2_ans]
+    split1.insert(0,['article', 'question', 'options', 'answer'])
+    split2.insert(0,['article', 'question', 'options', 'answer'])
     return split1, split2
 
 
 def main():
-    # dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
-    data = load_data("emozilla/quality")
-    # dataframe_validation = dataframe_validation.head(5)
-    dataframe_validation = data['validation']
-    val1, val2 = balance_dataset(dataframe_validation)
+    dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
+    # data = load_data("emozilla/quality")
+    #dataframe_validation = dataframe_validation.head(5)
+    #dataframe_validation = data['validation']
+    # val1, val2 = balance_dataset(dataframe_validation)
+
+    # val2 = [row + [None] * (len(val2[0]) - len(row)) for row in val2[1:]]
+    # val2.insert(0,['article', 'question', 'options', 'answer'])
 
 
-    dataset_validation = QAOptionsDataset(val2)
+
+    dataset_validation = QAOptionsDataset(dataframe_validation)
     test_dataloader = DataLoader(dataset_validation, batch_size=16, shuffle=True)
     evaluate_model(model, test_dataloader)
 
