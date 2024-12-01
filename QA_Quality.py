@@ -54,6 +54,8 @@ class QAOptionsDataset(Dataset):
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+
 class QAModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_options):
         super(QAModel, self).__init__()
@@ -77,34 +79,65 @@ num_epochs = 10
 batch_size = 16
 learning_rate = 0.1
 
-# Training Dataset
-dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
-#dataframe = dataframe.head(5)
+# # Training Dataset
+# dataframe = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
+# #dataframe = dataframe.head(5)
 
-# data = load_data("emozilla/quality")
-# dataframe = data['train']
+# # data = load_data("emozilla/quality")
+# # dataframe = data['train']
 
-dataset = QAOptionsDataset(dataframe)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# dataset = QAOptionsDataset(dataframe)
+# dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# Initialize model, loss, and optimizer
-model = QAModel(input_dim=input_dim, hidden_dim=hidden_dim, num_options=len(dataset[0][2]))
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+# # Initialize model, loss, and optimizer
+# model = QAModel(input_dim=input_dim, hidden_dim=hidden_dim, num_options=len(dataset[0][2]))
+# criterion = nn.CrossEntropyLoss()
+# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-# Training Loop
-for epoch in range(num_epochs):
-    total_loss = 0
-    for article_emb, question_emb, options_emb, correct_answer in dataloader:
-        optimizer.zero_grad()
-        # Forward pass
-        outputs = model(article_emb, question_emb, options_emb)
-        loss = criterion(outputs, correct_answer)
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
+# # Training Loop
+# for epoch in range(num_epochs):
+#     total_loss = 0
+#     for article_emb, question_emb, options_emb, correct_answer in dataloader:
+#         optimizer.zero_grad()
+#         # Forward pass
+#         outputs = model(article_emb, question_emb, options_emb)
+#         loss = criterion(outputs, correct_answer)
+#         loss.backward()
+#         optimizer.step()
+#         total_loss += loss.item()
 
-    print(f"Epoch {epoch+1}/{num_epochs}, Loss: {total_loss/len(dataloader)}")
+#     print(f"Epoch {epoch+1}/{num_epochs}, Loss: {total_loss/len(dataloader)}")
+
+def QA_Neural(dataframe, lr):
+
+    # Hyperparameters
+    input_dim = 768 * 2  # Combined Dimensions of Options and Source
+    hidden_dim = 256
+    num_epochs = 10
+    batch_size = 16
+    # learning_rate = 0.1
+
+    dataset = QAOptionsDataset(dataframe)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    model = QAModel(input_dim=input_dim, hidden_dim=hidden_dim, num_options=len(dataset[0][2]))
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    for epoch in range(num_epochs):
+        total_loss = 0
+        for article_emb, question_emb, options_emb, correct_answer in dataloader:
+            optimizer.zero_grad()
+            # Forward pass
+            outputs = model(article_emb, question_emb, options_emb)
+            loss = criterion(outputs, correct_answer)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {total_loss/len(dataloader)}")
+
+    return model
 
 
 # Evaluate
@@ -142,18 +175,21 @@ def balance_hard(data):
     return split1, split2
 
 def main():
+
+    # Training
+    dataframe_train = pd.read_parquet('hf_dataset/train-hf-qa.parquet')
+    #dataframe_train = dataframe_train.head(5)
+
+    model = QA_Neural(dataframe_train, 0.1)
+
+    # Validation
     dataframe_validation = pd.read_parquet('hf_dataset/validation-hf-qa.parquet')  # Load Validation dataset
-    #data = load_data("emozilla/quality")
-    #dataframe_validation = dataframe_validation.head(5)
-    #dataframe_validation = data['validation']
+    # = dataframe_validation.head(5)
+
     val1, val2 = balance_hard(dataframe_validation)
 
-    # val2 = [row + [None] * (len(val2[0]) - len(row)) for row in val2[1:]]
-    # val2.insert(0,['article', 'question', 'options', 'answer'])
-
-
-
     dataset_validation = QAOptionsDataset(val2)
+    model = QA_Neural(dataframe_validation, 0.3)
     test_dataloader = DataLoader(dataset_validation, batch_size=16, shuffle=True)
     evaluate_model(model, test_dataloader)
 
